@@ -58,6 +58,7 @@ tripFeatures<-function(trip,target) {
 }
 
 drivers = list.files("drivers")
+set.seed(123)
 randomDrivers = sample(drivers, size = 100)
 randomTrips = sample(1:200, size = 20)
 
