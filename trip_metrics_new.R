@@ -1,4 +1,4 @@
-generateDistribution <- function(x,name) {
+instagenerateDistribution <- function(x,name) {
       x_wo_na <- x[!is.na(x)]
       qdist <- seq(0.05,1, by = 0.05)
       if (length(x_wo_na)<(2*length(qdist))) {
@@ -19,20 +19,25 @@ calc_cinematic_features <- function(trip) {
       
       dx <- diff(trip$x,lag=2,differences=1)
       dy <- diff(trip$y,lag=2,differences=1)
+      
       speed <- sqrt( dx^2 + dy^2 ) # of size nrow(trip) - 2
       ux <- dx / speed
       uy <- dy / speed 
       ux[which(is.na(ux))] <- 0
       uy[which(is.na(uy))] <- 0
       dx2 <- diff(trip$x,lag=1,differences=2)
-      dy2 <- diff(trip$y,lag=1,differences=2)      
+      dy2 <- diff(trip$y,lag=1,differences=2)          
       
       accel_tangential <- ux * dx2 + uy * dy2
       accel_normal <- -uy * dx2 + ux * dy2      
-            
-      speed_distribution <- generateDistribution(speed,'speed')
-      accel_tangential_distribution <- generateDistribution(accel_tangential,'accel_tangential')
-      accel_normal_distribution <- generateDistribution(accel_normal,'accel_normal')
+      
+      roll_speed<- rollapply(speed , width = 5 , FUN = median)
+      roll_accel_tangential<- rollapply(accel_tangential , width = 5 , FUN = median)
+      roll_accel_normal<- rollapply(accel_normal , width = 5 , FUN = median)
+      
+      speed_distribution <- generateDistribution(roll_speed,'speed')
+      accel_tangential_distribution <- generateDistribution(roll_accel_tangential,'accel_tangential')
+      accel_normal_distribution <- generateDistribution(roll_accel_normal,'accel_normal')
       
       cinematic_features = c( speed_distribution , accel_tangential_distribution , accel_normal_distribution)
       return(cinematic_features)
@@ -69,10 +74,11 @@ target = 0
 names(target) = "target"
 for(driver in randomDrivers)
 {
-      dirPath = paste0("drivers/", driver, '/')
+      #dirPath = paste0("drivers/", driver, '/')
+      dirPath = paste("drivers/", driver, '/' , sep ="")
       for(i in 1:200)
       {
-            trip = read.csv(paste0(dirPath, i, ".csv"))            
+            trip = read.csv(paste(dirPath, i, ".csv",sep = ""))            
             features = tripFeatures(trip , target)
             refData = rbind(refData, features)
       }
@@ -81,14 +87,15 @@ for(driver in randomDrivers)
 target = 1
 names(target) = "target"
 submission = NULL
-for(driver in drivers[1:10])
+for(driver in drivers)
 {
       print(driver)
-      dirPath = paste0("drivers/", driver, '/')
+      #dirPath = paste0("drivers/", driver, '/')
+      dirPath = paste("drivers/", driver, '/',sep = "")
       currentData = NULL
       for(i in 1:200)
       {
-            trip = read.csv(paste0(dirPath, i, ".csv"))
+            trip = read.csv(paste(dirPath, i, ".csv",sep=""))
             features = tripFeatures(trip , target)
             currentData = rbind(currentData, features)
       }
@@ -97,7 +104,7 @@ for(driver in drivers[1:10])
       g = glm(target ~ ., data=train, family = binomial("logit"))
       currentData = as.data.frame(currentData)
       p =predict(g, currentData, type = "response")
-      labels = sapply(1:200, function(x) paste0(driver,'_', x))
+      labels = sapply(1:200, function(x) paste(driver,'_', x,sep=""))
       result = cbind(labels, p)
       submission = rbind(submission, result)
 }

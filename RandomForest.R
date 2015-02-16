@@ -119,14 +119,19 @@ currentData = as.data.frame(currentData)
 g = glm(target ~ ., data=train, family = binomial("logit"))
 p =predict(g, currentData, type = "response")
 
-
 # RANDOM FOREST
 
-g = randomForest(as.factor(target) ~ ., data=train)           
-p =predict(g, newdata = train[train$target == as.factor(1) , ], type = "prob")
+#g = randomForest(as.factor(target) ~ ., data=train)           
+#p =predict(g, newdata = train[train$target == as.factor(1) , ], type = "prob")
 
 labels = sapply(1:200, function(x) paste(driver,'_', x,sep=""))
-result = cbind(labels, p[,2])
+
+# LOGISTIC REGRESSION
+result = cbind(labels, p)
+
+# RANDOM FOREST
+#result = cbind(labels, p[,2])
+
 submission = rbind(submission, result)
 }
 
